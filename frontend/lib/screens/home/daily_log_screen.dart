@@ -112,7 +112,7 @@ class DailyLogCard extends StatelessWidget {
   final DailyLog log;
   final Function() onRefresh;
 
-  const DailyLogCard({
+  const DailyLogCard({super.key, 
     required this.log,
     required this.onRefresh,
   });
@@ -389,7 +389,7 @@ class DailyLogDetailScreen extends StatefulWidget {
   final DailyLog log;
   final Function() onRefresh;
 
-  const DailyLogDetailScreen({
+  const DailyLogDetailScreen({super.key, 
     required this.log,
     required this.onRefresh,
   });
@@ -757,7 +757,7 @@ class _MetricCard extends StatelessWidget {
 class RoutineEntryTile extends StatelessWidget {
   final RoutineEntry entry;
 
-  const RoutineEntryTile({required this.entry});
+  const RoutineEntryTile({super.key, required this.entry});
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -827,7 +827,7 @@ class AddRoutineEntryDialog extends StatefulWidget {
   final List<Routine> routines;
   final Function() onAdded;
 
-  const AddRoutineEntryDialog({
+  const AddRoutineEntryDialog({super.key, 
     required this.logId,
     required this.routines,
     required this.onAdded,
@@ -868,7 +868,7 @@ class _AddRoutineEntryDialogState extends State<AddRoutineEntryDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<Routine>(
-              value: _selectedRoutine,
+              initialValue: _selectedRoutine,
               decoration: const InputDecoration(
                 labelText: 'Routine',
                 border: OutlineInputBorder(),
@@ -885,7 +885,7 @@ class _AddRoutineEntryDialogState extends State<AddRoutineEntryDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               decoration: const InputDecoration(
                 labelText: 'Status',
                 border: OutlineInputBorder(),

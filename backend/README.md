@@ -7,7 +7,7 @@ Backend for a personal mentor app that tracks daily routines, mood, and gives bl
 - SQLAlchemy + Flask-SQLAlchemy (ORM)
 - SQLite for local dev (PostgreSQL in production)
 - Flask-Migrate (migrations)
-- OpenAI API (planned) for feedback generation
+- OpenAI API for LLM-backed routine generation and feedback (optional; falls back to rules)
 
 ## Data Models
 - `User`: auth fields, mentor style (`strict`, `gentle`, `balanced`, `hilarious`), intensity, goals, bio
@@ -41,6 +41,7 @@ Base URL: `http://localhost:5000/api`
 - `GET /api/routines/<id>` – get one. Requires auth.
 - `PUT /api/routines/<id>` – update. Requires auth.
 - `DELETE /api/routines/<id>` – deactivate routine. Requires auth.
+- `POST /api/routines/generate-ai` – generate routines using LLM with rule-based fallback. Body: `{ "goals": str, "challenges": str, "unavailable_times": str, "desired_routines": str }`. Returns `{ message, summary, used_llm_generation, used_llm_summary, routines: [...] }`.
 
 ### Daily Logs
 - `GET /api/daily-logs` – list logs (newest first). Requires auth.
@@ -129,6 +130,26 @@ Generate feedback for log `1`:
 curl -X POST http://localhost:5000/api/feedback/generate/1 `
 	-Headers @{"Authorization" = "Bearer $token"}
 ```
+
+Generate AI routines (with summary):
+```powershell
+$body = '{
+	"goals": "Get fitter and advance career",
+	"challenges": "Time constraints, procrastination",
+	"unavailable_times": "9-11 AM, 1-3 PM",
+	"desired_routines": "strength training, language"
+}'
+
+curl -X POST http://localhost:5000/api/routines/generate-ai `
+	-Headers @{"Authorization" = "Bearer $token"} `
+	-ContentType "application/json" `
+	-Body $body
+```
+
+### Environment (LLM)
+- `OPENAI_API_KEY` (required for LLM; omit to use fallback)
+- `OPENAI_MODEL` (optional, default `gpt-4o-mini`)
+- `OPENAI_BASE_URL` (optional; for proxies/Azure-compatible endpoints)
 
 ## Workflow: Daily Log and Feedback
 

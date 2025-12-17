@@ -43,6 +43,7 @@ class Routine(db.Model):
     # Expected frequency and target
     frequency = db.Column(db.String(50))  # 'daily', 'weekly', 'custom'
     target_duration = db.Column(db.Integer)  # minutes
+    scheduled_time = db.Column(db.Time)  # preferred time of day (HH:MM:SS)
     
     # Priority and difficulty
     priority = db.Column(db.Integer, default=5)  # 1-10 scale

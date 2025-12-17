@@ -1,6 +1,6 @@
 """
-AI Prompt templates for mentor feedback generation.
-These prompts are used with OpenAI API to generate personalized feedback.
+AI Prompt templates for mentor feedback generation and routine generation.
+These prompts are used with OpenAI API to generate personalized content.
 """
 
 MENTOR_SYSTEM_PROMPTS = {
@@ -151,3 +151,116 @@ def build_feedback_prompt(user, daily_log, historical_data, routine_entries):
     )
     
     return prompt
+
+# ---------------------- Routine Generation Prompts ----------------------
+
+ROUTINE_STYLE_GUIDANCE = {
+    'strict': {
+        'count_range': (6, 10),
+        'difficulty_range': (9, 10),
+        'tone': 'demanding and ambitious',
+    },
+    'gentle': {
+        'count_range': (3, 5),
+        'difficulty_range': (3, 6),
+        'tone': 'supportive and incremental',
+    },
+    'balanced': {
+        'count_range': (4, 7),
+        'difficulty_range': (5, 7),
+        'tone': 'realistic and sustainable',
+    },
+    'hilarious': {
+        'count_range': (4, 7),
+        'difficulty_range': (5, 8),
+        'tone': 'playful but effective',
+    },
+}
+
+ROUTINE_SYSTEM_PROMPT = (
+    "You are a helpful coach who designs daily routines that are realistic, concise, and aligned "
+    "with user goals and constraints. Always return strictly valid JSON following the requested schema."
+)
+
+def build_routine_generation_user_prompt(user, goals: str, challenges: str, unavailable_times: str, desired_routines: str):
+    style = (user.mentor_style or 'balanced').lower()
+    intensity = user.mentor_intensity or 5
+    style_cfg = ROUTINE_STYLE_GUIDANCE.get(style, ROUTINE_STYLE_GUIDANCE['balanced'])
+    min_count, max_count = style_cfg['count_range']
+    min_diff, max_diff = style_cfg['difficulty_range']
+    tone = style_cfg['tone']
+
+    return f"""
+User Profile:
+- Mentor Style: {style}
+- Mentor Intensity: {intensity}/10
+- Style Guidance: Aim for {tone} plans.
+
+Inputs:
+- Goals: {goals or 'None provided'}
+- Challenges: {challenges or 'None provided'}
+- Unavailable Times: {unavailable_times or 'None provided'}
+- Desired Routines: {desired_routines or 'None provided'}
+
+Task:
+Design a set of daily routines tailored to the user. Respect unavailable times (avoid suggesting routines in those time windows conceptually). Prefer names that are short and conventional. Keep durations realistic.
+
+Output Requirements:
+- Return a single JSON object with a top-level key "routines".
+- The value of "routines" must be an array of between {min_count} and {max_count} items.
+- Each routine must be an object with fields:
+    - name: string
+    - description: string (one sentence)
+    - category: one of ["health", "work", "personal"]
+    - frequency: string, always "daily"
+    - target_duration: integer minutes (5 to 120)
+    - priority: integer 1–10 (higher means more important)
+    - difficulty: integer {min_diff}–{max_diff}
+    - scheduled_time: string in 24-hour HH:MM format (avoid unavailable times)
+
+Constraints:
+- Avoid duplicates by name.
+- Keep JSON strictly valid; do not include comments or extra text.
+- If desired routines are specified, try to include them where appropriate.
+- Let mentor style influence count and difficulty within the specified ranges.
+- Choose scheduled_time values that do not overlap the listed unavailable time ranges.
+"""
+
+ROUTINE_SUMMARY_SYSTEM_PROMPT = (
+    "You are a concise, empathetic coach. Write a short, 5-7 sentence summary "
+    "about the user's current life situation (as implied by goals/challenges) and "
+    "the set of proposed routines and why they fit. Keep tone aligned with mentor style."
+)
+
+def build_routine_summary_user_prompt(user, goals: str, challenges: str, unavailable_times: str, desired_routines: str, routines: list[dict]):
+    style = (user.mentor_style or 'balanced').lower()
+    intensity = user.mentor_intensity or 5
+    routines_lines = []
+    for r in routines:
+        st = r.get('scheduled_time')
+        st_part = f" at {st}" if st else ""
+        routines_lines.append(f"- {r.get('name')} ({r.get('category')}, {r.get('target_duration')} min, priority {r.get('priority')}, difficulty {r.get('difficulty')}{st_part}) — {r.get('description')}")
+    routines_block = "\n".join(routines_lines)
+
+    return f"""
+User Profile:
+- Mentor Style: {style}
+- Mentor Intensity: {intensity}/10
+
+Inputs:
+- Goals: {goals or 'None provided'}
+- Challenges: {challenges or 'None provided'}
+- Unavailable Times: {unavailable_times or 'None provided'}
+- Desired Routines: {desired_routines or 'None provided'}
+
+Proposed Routines:
+{routines_block}
+
+Task:
+Write a short summary (5–7 sentences) that:
+- Reflects the user's situation and constraints.
+- Explains why these routines were chosen and how they support the goals.
+- Aligns tone with the mentor style.
+- Is direct and scannable; no lists, just a cohesive paragraph.
+"""
+

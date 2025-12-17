@@ -107,7 +107,7 @@ class RoutineCard extends StatelessWidget {
   final Routine routine;
   final Future<void> Function() onRefresh;
 
-  const RoutineCard({
+  const RoutineCard({super.key, 
     required this.routine,
     required this.onRefresh,
   });
@@ -224,7 +224,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
   String _category = 'general';
   String _frequency = 'daily';
   int _targetDuration = 30;
-  int _priority = 5;
+  final int _priority = 5;
   int _difficulty = 5;
   bool _isLoading = false;
 
@@ -261,7 +261,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _category,
+              initialValue: _category,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),
@@ -277,7 +277,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: _frequency,
+              initialValue: _frequency,
               decoration: const InputDecoration(
                 labelText: 'Frequency',
                 border: OutlineInputBorder(),
@@ -381,7 +381,7 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
 class EditRoutineDialog extends StatefulWidget {
   final Routine routine;
 
-  const EditRoutineDialog({required this.routine});
+  const EditRoutineDialog({super.key, required this.routine});
 
   @override
   State<EditRoutineDialog> createState() => _EditRoutineDialogState();

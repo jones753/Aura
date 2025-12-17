@@ -45,19 +45,16 @@ def register():
     data = request.get_json()
     
     # Validation
-    if not data or not data.get('username') or not data.get('email') or not data.get('password'):
+    if not data or not data.get('username') or not data.get('password'):
         return jsonify({'message': 'Missing required fields'}), 400
     
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'message': 'Username already exists'}), 409
     
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'message': 'Email already exists'}), 409
-    
     # Create new user
     user = User(
         username=data['username'],
-        email=data['email'],
+        email=data.get('email', f"{data['username']}@temp.local"),
         password_hash=generate_password_hash(data['password']),
         first_name=data.get('first_name', ''),
         last_name=data.get('last_name', ''),

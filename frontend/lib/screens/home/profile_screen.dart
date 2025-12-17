@@ -312,7 +312,7 @@ class _InfoRow extends StatelessWidget {
 class EditProfileScreen extends StatefulWidget {
   final Map<String, dynamic> profile;
 
-  const EditProfileScreen({required this.profile});
+  const EditProfileScreen({super.key, required this.profile});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
