@@ -1,0 +1,65 @@
+# --- Common ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Secrets / Environment ---
+.env
+*.env
+*.secret
+*.key
+*.pem
+instance/
+
+# --- Python backend ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+pip-wheel-metadata/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+coverage.xml
+.coverage*
+
+# --- Flutter / Dart ---
+.dart_tool/
+.packages
+pubspec.lock
+build/
+coverage/
+flutter_*.png
+**/doc/api/
+
+# --- Android ---
+android/.gradle/
+android/local.properties
+android/**/build/
+
+# --- iOS / macOS ---
+ios/Pods/
+ios/.generated/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.*
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.*
+macos/Pods/
+
+# --- Web ---
+lib/generated_plugin_registrant.dart
+
+# --- Windows / Linux ---
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
