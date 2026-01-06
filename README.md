@@ -21,7 +21,7 @@ Aura is a mobile app that helps you build better habits through daily routine tr
 - Python / Flask
 - SQLAlchemy + SQLite
 - JWT Authentication
-- OpenAI API (optional)
+- OpenAI API
 
 ## Getting Started
 
