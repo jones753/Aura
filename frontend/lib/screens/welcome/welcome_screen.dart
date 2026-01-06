@@ -7,19 +7,19 @@ import '../../services/onboarding_service.dart';
 class _WelcomePageData {
   final String title;
   final String subtitle;
-  final IconData icon;
   final bool isFinal;
 
   const _WelcomePageData({
     required this.title,
     required this.subtitle,
-    required this.icon,
     this.isFinal = false,
   });
 }
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+  final int initialPage;
+
+  const WelcomeScreen({super.key, this.initialPage = 0});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -36,18 +36,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     _WelcomePageData(
       title: 'Welcome to\nAura',
       subtitle: 'Your personal guide to daily growth',
-      icon: Icons.auto_awesome,
     ),
     _WelcomePageData(
       title: 'Your Personal\nGrowth Journey',
       subtitle:
           'Track habits, set goals, and receive personalized guidance tailored to you',
-      icon: Icons.trending_up,
     ),
     _WelcomePageData(
       title: 'Ready to\nGet Started?',
       subtitle: 'Join thousands building better habits every day',
-      icon: Icons.rocket_launch,
       isFinal: true,
     ),
   ];
@@ -55,6 +52,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
+
+    // Set current page from widget parameter
+    _currentPage = widget.initialPage;
 
     // Create controllers for each page
     _controllers = List.generate(
@@ -85,8 +85,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       );
     }).toList();
 
-    // Start first page animation
-    _controllers[0].forward();
+    // Start initial page animation
+    _controllers[_currentPage].forward();
   }
 
   @override
@@ -105,6 +105,19 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           _currentPage++;
         });
         // Fade in next page
+        _controllers[_currentPage].forward();
+      });
+    }
+  }
+
+  void _goToPreviousPage() {
+    if (_currentPage > 0) {
+      // Fade out current page
+      _controllers[_currentPage].reverse().then((_) {
+        setState(() {
+          _currentPage--;
+        });
+        // Fade in previous page
         _controllers[_currentPage].forward();
       });
     }
@@ -141,21 +154,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon with glow effect
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              color: const Color(0xFF007AFF).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Icon(
-              page.icon,
-              size: 50,
-              color: const Color(0xFF007AFF),
-            ),
-          ),
-          const SizedBox(height: 48),
           // Title
           Text(
             page.title,
@@ -184,31 +182,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildContinueButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: _goToNextPage,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF007AFF),
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 0,
-        ),
-        child: const Text(
-          'Continue',
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
     );
   }
@@ -286,45 +259,81 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         extendBody: true,
         extendBodyBehindAppBar: true,
         body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Main content area
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildAnimatedContent(_currentPage),
-              ),
+            Column(
+              children: [
+                // Main content area (tappable for non-final pages)
+                Expanded(
+                  child: GestureDetector(
+                    onTap: page.isFinal ? null : _goToNextPage,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _buildAnimatedContent(_currentPage),
+                    ),
+                  ),
+                ),
+
+                // Page indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _pages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index
+                            ? const Color(0xFF007AFF)
+                            : Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // Action buttons (only for final page)
+                if (page.isFinal) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _buildFinalButtons(),
+                  ),
+                ],
+
+                const SizedBox(height: 40),
+              ],
             ),
 
-            // Page indicators
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _pages.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentPage == index ? 24 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: _currentPage == index
-                        ? const Color(0xFF007AFF)
-                        : Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
+            // Back button (only show if not on first page)
+            if (_currentPage > 0)
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _goToPreviousPage,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_ios_new,
+                        color: Colors.white.withOpacity(0.8),
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 40),
-
-            // Action buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: page.isFinal ? _buildFinalButtons() : _buildContinueButton(),
-            ),
-
-            const SizedBox(height: 40),
           ],
         ),
       ),

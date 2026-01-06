@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../services/daily_log_service.dart';
 import '../../services/routine_service.dart';
 import '../../services/theme_service.dart';
@@ -147,9 +148,15 @@ class _DashboardTabState extends State<DashboardTab> with SingleTickerProviderSt
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          setState(() {
-            _routinesFuture = RoutineService.getRoutines();
-            _logsFuture = DailyLogService.getDailyLogs();
+          await Future.microtask(() {
+            SchedulerBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _routinesFuture = RoutineService.getRoutines();
+                  _logsFuture = DailyLogService.getDailyLogs();
+                });
+              }
+            });
           });
         },
         child: SingleChildScrollView(
