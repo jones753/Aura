@@ -7,7 +7,6 @@ Aura is a mobile app that helps you build better habits through daily routine tr
 - **Daily Routine Tracking** - Create and track routines with scheduling, priority, and difficulty settings
 - **Mood & Energy Logging** - Log daily mood, energy, and stress levels with notes
 - **AI-Powered Feedback** - Receive personalized guidance based on your progress
-- **Customizable Mentor** - Choose your mentor's style (strict, gentle, balanced, hilarious) and intensity
 
 ## Screenshots
 <img width="360" height="780" alt="Screenshot_1767800119" src="https://github.com/user-attachments/assets/179168db-d1a2-4001-a74e-a373a45a6cb1" />
