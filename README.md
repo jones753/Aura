@@ -12,12 +12,13 @@ Aura is a mobile app that helps you build better habits through daily routine tr
 - **Customizable Mentor** - Choose your mentor's style (strict, gentle, balanced, hilarious) and intensity
 
 ## Screenshots
-<img width="360" height="780" alt="Screenshot_1767715442" src="https://github.com/user-attachments/assets/afea128a-a3fd-4fff-bad7-4d2d83cba1fb" />
-<img width="360" height="780" alt="Screenshot_1767715450" src="https://github.com/user-attachments/assets/5ab015aa-11eb-489a-8303-60d93169c075" />
-<img width="360" height="780" alt="Screenshot_1767715454" src="https://github.com/user-attachments/assets/40728d6b-02cc-4091-be9b-1cda34e4a8a1" />
-<img width="360" height="780" alt="Screenshot_1767715460" src="https://github.com/user-attachments/assets/5ff933a9-8048-4e90-95ca-535507e95beb" />
+<img width="360" height="780" alt="Screenshot_1767800119" src="https://github.com/user-attachments/assets/179168db-d1a2-4001-a74e-a373a45a6cb1" />
+<img width="360" height="780" alt="Screenshot_1767800122" src="https://github.com/user-attachments/assets/3673ca30-0573-4c1e-a448-598220be4cf7" />
+<img width="360" height="780" alt="Screenshot_1767800125" src="https://github.com/user-attachments/assets/10f77194-2300-4069-ac57-60376ce87ea5" />
+<img width="360" height="780" alt="Screenshot_1767800284" src="https://github.com/user-attachments/assets/8f0da0b8-b5f7-4a20-99c7-3eb8b398b260" />
 <img width="360" height="780" alt="Screenshot_1767715496" src="https://github.com/user-attachments/assets/fe2591af-45f6-4772-8e4c-a458d96d2b7d" />
-<img width="360" height="780" alt="Screenshot_1767715501" src="https://github.com/user-attachments/assets/7ff0b1c3-6258-45e0-b042-a18d5203c941" />
+<img width="360" height="780" alt="Screenshot_1767800099" src="https://github.com/user-attachments/assets/359ac9c4-761f-479c-8146-081ccb7b86dd" />
+<img width="360" height="780" alt="Screenshot_1767800092" src="https://github.com/user-attachments/assets/d9a1c147-0456-4ab3-b086-1dfcfbf88dcd" />
 
 ## Tech Stack
 
