@@ -131,9 +131,8 @@ def build_feedback_prompt(user, daily_log, historical_data, routine_entries):
 
 # Single default system prompt for routine generation
 DEFAULT_ROUTINE_SYSTEM_PROMPT = """You are a helpful coach who designs realistic daily routines
-aligned with user goals. Create routines with time ranges (start_time and end_time in HH:MM format)
-and flexible frequency descriptions (e.g., '3x per week', 'daily'). Always return strictly valid
-JSON following the requested schema."""
+aligned with user goals. Create routines with flexible frequency descriptions (e.g., '3x per week', 'daily'). 
+Always return strictly valid JSON following the requested schema."""
 
 def build_routine_generation_user_prompt(user, goals: str, challenges: str, unavailable_times: str, desired_routines: str):
     return f"""
@@ -147,7 +146,7 @@ User Inputs:
 - Desired Routines: {desired_routines or 'None provided'}
 
 Task:
-Design a set of 4-7 daily routines tailored to the user's goals and constraints. Respect unavailable times when scheduling. Prefer names that are short and conventional. Keep durations realistic and sustainable.
+Design a set of 4-7 daily routines tailored to the user's goals and constraints. Prefer names that are short and conventional. Keep durations realistic and sustainable.
 
 Output Requirements:
 - Return a single JSON object with a top-level key "routines".
@@ -159,15 +158,11 @@ Output Requirements:
     - frequency: string (e.g., "daily", "3x per week", "weekly")
     - target_duration: integer minutes (5 to 120)
     - priority: integer 1–10 (higher means more important)
-    - start_time: string in 24-hour HH:MM format (start of time window)
-    - end_time: string in 24-hour HH:MM format (end of time window)
 
 Constraints:
 - Avoid duplicates by name.
 - Keep JSON strictly valid; do not include comments or extra text.
 - If desired routines are specified, try to include them where appropriate.
-- Choose time windows that do not overlap the listed unavailable time ranges.
-- Make time windows realistic (e.g., "07:00" to "09:00" for morning routine).
 - Frequency should be flexible - not all routines need to be daily.
 """
 
@@ -180,10 +175,7 @@ ROUTINE_SUMMARY_SYSTEM_PROMPT = (
 def build_routine_summary_user_prompt(user, goals: str, challenges: str, unavailable_times: str, desired_routines: str, routines: list[dict]):
     routines_lines = []
     for r in routines:
-        st = r.get('start_time')
-        et = r.get('end_time')
-        time_part = f" {st}-{et}" if st and et else (f" at {st}" if st else "")
-        routines_lines.append(f"- {r.get('name')} ({r.get('category')}, {r.get('target_duration')} min, {r.get('frequency')}, priority {r.get('priority')}{time_part}) — {r.get('description')}")
+        routines_lines.append(f"- {r.get('name')} ({r.get('category')}, {r.get('target_duration')} min, {r.get('frequency')}, priority {r.get('priority')}) — {r.get('description')}")
     routines_block = "\n".join(routines_lines)
 
     return f"""

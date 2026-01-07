@@ -263,25 +263,34 @@ class RoutineCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF007AFF).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.repeat, size: 14, color: Color(0xFF007AFF)),
-                    const SizedBox(width: 6),
-                    Text(
-                      routine.frequency,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF007AFF),
-                      ),
+              // Days selector button
+              InkWell(
+                onTap: () => _showDaySelectionDialog(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5856D6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFF5856D6).withOpacity(0.3),
+                      width: 1,
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today, size: 14, color: Color(0xFF5856D6)),
+                      const SizedBox(width: 6),
+                      Text(
+                        _getDaysText(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5856D6),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -292,6 +301,7 @@ class RoutineCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.schedule, size: 14, color: Color(0xFF34C759)),
                     const SizedBox(width: 6),
@@ -306,41 +316,58 @@ class RoutineCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Spacer(),
-              if (routine.startTime != null && routine.endTime != null)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Time',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF8E8E93),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF5856D6).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${routine.startTime}-${routine.endTime}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF5856D6),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  String _getDaysText() {
+    if (routine.selectedDays.length == 7) {
+      return 'Every day';
+    } else if (routine.selectedDays.isEmpty) {
+      return 'No days';
+    } else if (routine.selectedDays.length == 1) {
+      return routine.selectedDays.first;
+    } else {
+      return '${routine.selectedDays.length} days';
+    }
+  }
+
+  void _showDaySelectionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => DaySelectionDialog(
+        routine: routine,
+        onDaysSelected: (selectedDays) {
+          _updateRoutineDays(context, selectedDays);
+        },
+      ),
+    );
+  }
+
+  Future<void> _updateRoutineDays(BuildContext context, List<String> selectedDays) async {
+    try {
+      await RoutineService.updateRoutine(
+        routineId: routine.id,
+        selectedDays: selectedDays,
+      );
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Days updated successfully')),
+        );
+      }
+      
+      onRefresh();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   void _showEditRoutineDialog(BuildContext context) {
@@ -367,10 +394,9 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
   final _descriptionController = TextEditingController();
   String _category = 'general';
   String _frequency = 'daily';
+  Set<String> _selectedDays = {'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'};
   int _targetDuration = 30;
   final int _priority = 5;
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
   bool _isLoading = false;
 
   @override
@@ -445,6 +471,65 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
                   });
                 },
               ),
+              const SizedBox(height: 16),
+              // Day selection
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? const Color(0xFFF2F2F7)
+                      : const Color(0xFF2C2C2E),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Active Days',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedDays = {'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'};
+                            });
+                          },
+                          child: const Text('All'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
+                        final isSelected = _selectedDays.contains(day);
+                        return FilterChip(
+                          label: Text(day),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedDays.add(day);
+                              } else {
+                                if (_selectedDays.length > 1) {
+                                  _selectedDays.remove(day);
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -493,64 +578,6 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? const Color(0xFFF2F2F7)
-                      : const Color(0xFF2C2C2E),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Time Window (Optional)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_startTime == null ? 'Start Time' : _startTime!.format(context)),
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: _startTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() => _startTime = time);
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_endTime == null ? 'End Time' : _endTime!.format(context)),
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: _endTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() => _endTime = time);
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -593,14 +620,9 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
         description: _descriptionController.text,
         category: _category,
         frequency: _frequency,
+        selectedDays: _selectedDays.toList(),
         targetDuration: _targetDuration,
         priority: _priority,
-        startTime: _startTime != null
-            ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
-            : null,
-        endTime: _endTime != null
-            ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
-            : null,
       );
 
       if (mounted) {
@@ -634,8 +656,7 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late String _category;
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
+  late Set<String> _selectedDays;
   bool _isLoading = false;
 
   @override
@@ -644,16 +665,7 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
     _nameController = TextEditingController(text: widget.routine.name);
     _descriptionController = TextEditingController(text: widget.routine.description);
     _category = widget.routine.category;
-
-    // Parse start and end times from routine
-    if (widget.routine.startTime != null) {
-      final parts = widget.routine.startTime!.split(':');
-      _startTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-    }
-    if (widget.routine.endTime != null) {
-      final parts = widget.routine.endTime!.split(':');
-      _endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-    }
+    _selectedDays = Set.from(widget.routine.selectedDays);
   }
 
   @override
@@ -699,6 +711,7 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
                 maxLines: 2,
               ),
               const SizedBox(height: 24),
+              // Day selection
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -710,48 +723,48 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Time Window',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_startTime == null ? 'Start Time' : _startTime!.format(context)),
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: _startTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() => _startTime = time);
-                              }
-                            },
+                        const Text(
+                          'Active Days',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.access_time),
-                            label: Text(_endTime == null ? 'End Time' : _endTime!.format(context)),
-                            onPressed: () async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: _endTime ?? TimeOfDay.now(),
-                              );
-                              if (time != null) {
-                                setState(() => _endTime = time);
-                              }
-                            },
-                          ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedDays = {'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'};
+                            });
+                          },
+                          child: const Text('All'),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) {
+                        final isSelected = _selectedDays.contains(day);
+                        return FilterChip(
+                          label: Text(day),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedDays.add(day);
+                              } else {
+                                if (_selectedDays.length > 1) {
+                                  _selectedDays.remove(day);
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
@@ -808,12 +821,7 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
         routineId: widget.routine.id,
         name: _nameController.text,
         description: _descriptionController.text,
-        startTime: _startTime != null
-            ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
-            : null,
-        endTime: _endTime != null
-            ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
-            : null,
+        selectedDays: _selectedDays.toList(),
       );
 
       if (mounted) {
@@ -879,6 +887,138 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+}
+
+class DaySelectionDialog extends StatefulWidget {
+  final Routine routine;
+  final Function(List<String>) onDaysSelected;
+
+  const DaySelectionDialog({
+    super.key,
+    required this.routine,
+    required this.onDaysSelected,
+  });
+
+  @override
+  State<DaySelectionDialog> createState() => _DaySelectionDialogState();
+}
+
+class _DaySelectionDialogState extends State<DaySelectionDialog> {
+  late Set<String> _selectedDays;
+  final List<String> _allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDays = Set.from(widget.routine.selectedDays);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Select Days'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Quick select buttons
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDays = Set.from(_allDays);
+                    });
+                  },
+                  child: const Text('All'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDays = {'Mon', 'Tue', 'Wed', 'Thu', 'Fri'};
+                    });
+                  },
+                  child: const Text('Weekdays'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _selectedDays = {};
+                    });
+                  },
+                  child: const Text('None'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          // Individual day checkboxes
+          ..._allDays.map((day) {
+            final isSelected = _selectedDays.contains(day);
+            return CheckboxListTile(
+              title: Text(_getFullDayName(day)),
+              value: isSelected,
+              onChanged: (value) {
+                setState(() {
+                  if (value == true) {
+                    _selectedDays.add(day);
+                  } else {
+                    _selectedDays.remove(day);
+                  }
+                });
+              },
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            );
+          }).toList(),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _selectedDays.isEmpty
+              ? null
+              : () {
+                  widget.onDaysSelected(_selectedDays.toList());
+                  Navigator.pop(context);
+                },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+
+  String _getFullDayName(String shortName) {
+    switch (shortName) {
+      case 'Mon':
+        return 'Monday';
+      case 'Tue':
+        return 'Tuesday';
+      case 'Wed':
+        return 'Wednesday';
+      case 'Thu':
+        return 'Thursday';
+      case 'Fri':
+        return 'Friday';
+      case 'Sat':
+        return 'Saturday';
+      case 'Sun':
+        return 'Sunday';
+      default:
+        return shortName;
     }
   }
 }

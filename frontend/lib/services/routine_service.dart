@@ -6,15 +6,14 @@ class Routine {
   final String description;
   final String category;
   final String frequency;
+  final List<String> selectedDays; // List of days: ['Mon', 'Wed', 'Fri']
   final int targetDuration;
   final int priority;
   final bool isActive;
   final DateTime createdAt;
-  final String? startTime; // Time range start (HH:MM format)
-  final String? endTime; // Time range end (HH:MM format)
-  final int currentStreak; // New field
-  final int longestStreak; // New field
-  final DateTime? lastCompletedDate; // New field
+  final int currentStreak;
+  final int longestStreak;
+  final DateTime? lastCompletedDate;
 
   Routine({
     required this.id,
@@ -22,34 +21,45 @@ class Routine {
     required this.description,
     required this.category,
     required this.frequency,
+    required this.selectedDays,
     required this.targetDuration,
     required this.priority,
     required this.isActive,
     required this.createdAt,
-    this.startTime,
-    this.endTime,
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.lastCompletedDate,
   });
 
   factory Routine.fromJson(Map<String, dynamic> json) {
+    // Parse selected_days from backend
+    List<String> days = [];
+    final selectedDaysStr = json['selected_days'] ?? 'all';
+    if (selectedDaysStr == 'all') {
+      days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    } else {
+      days = (selectedDaysStr as String)
+          .split(',')
+          .map((String s) => s.trim())
+          .where((String s) => s.isNotEmpty)
+          .toList();
+    }
+    
     return Routine(
-      id: json['id'],
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
       name: json['name'],
       description: json['description'] ?? '',
       category: json['category'] ?? 'general',
       frequency: json['frequency'] ?? 'daily',
-      targetDuration: json['target_duration'] ?? 30,
-      priority: json['priority'] ?? 5,
+      selectedDays: days,
+      targetDuration: json['target_duration'] is int ? json['target_duration'] : int.parse(json['target_duration']?.toString() ?? '30'),
+      priority: json['priority'] is int ? json['priority'] : int.parse(json['priority']?.toString() ?? '5'),
       isActive: json['is_active'] ?? true,
       createdAt: DateTime.parse(
         (json['created_at'] ?? DateTime.now().toIso8601String()),
       ),
-      startTime: json['start_time'],
-      endTime: json['end_time'],
-      currentStreak: json['current_streak'] ?? 0,
-      longestStreak: json['longest_streak'] ?? 0,
+      currentStreak: json['current_streak'] is int ? json['current_streak'] : int.parse(json['current_streak']?.toString() ?? '0'),
+      longestStreak: json['longest_streak'] is int ? json['longest_streak'] : int.parse(json['longest_streak']?.toString() ?? '0'),
       lastCompletedDate: json['last_completed_date'] != null
           ? DateTime.parse(json['last_completed_date'])
           : null,
@@ -75,21 +85,29 @@ class RoutineService {
     String description = '',
     String category = 'general',
     String frequency = 'daily',
+    List<String>? selectedDays,
     int targetDuration = 30,
     int priority = 5,
-    String? startTime,
-    String? endTime,
   }) async {
     try {
+      // Convert selectedDays to comma-separated string or 'all'
+      String daysStr = 'all';
+      if (selectedDays != null && selectedDays.isNotEmpty) {
+        if (selectedDays.length == 7) {
+          daysStr = 'all';
+        } else {
+          daysStr = selectedDays.join(',');
+        }
+      }
+      
       final response = await ApiService.post('/routines', {
         'name': name,
         'description': description,
         'category': category,
         'frequency': frequency,
+        'selected_days': daysStr,
         'target_duration': targetDuration,
         'priority': priority,
-        if (startTime != null) 'start_time': startTime,
-        if (endTime != null) 'end_time': endTime,
       });
       return Routine.fromJson(response['routine']);
     } catch (e) {
@@ -104,10 +122,9 @@ class RoutineService {
     String? description,
     String? category,
     String? frequency,
+    List<String>? selectedDays,
     int? targetDuration,
     int? priority,
-    String? startTime,
-    String? endTime,
     bool? isActive,
   }) async {
     try {
@@ -116,10 +133,15 @@ class RoutineService {
       if (description != null) body['description'] = description;
       if (category != null) body['category'] = category;
       if (frequency != null) body['frequency'] = frequency;
+      if (selectedDays != null) {
+        if (selectedDays.length == 7) {
+          body['selected_days'] = 'all';
+        } else {
+          body['selected_days'] = selectedDays.join(',');
+        }
+      }
       if (targetDuration != null) body['target_duration'] = targetDuration;
       if (priority != null) body['priority'] = priority;
-      if (startTime != null) body['start_time'] = startTime;
-      if (endTime != null) body['end_time'] = endTime;
       if (isActive != null) body['is_active'] = isActive;
 
       final response = await ApiService.put('/routines/$routineId', body);

@@ -89,6 +89,32 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return date.isBefore(DateTime(today.year, today.month, today.day));
   }
 
+  String _getDayAbbreviation(DateTime date) {
+    switch (date.weekday) {
+      case 1:
+        return 'Mon';
+      case 2:
+        return 'Tue';
+      case 3:
+        return 'Wed';
+      case 4:
+        return 'Thu';
+      case 5:
+        return 'Fri';
+      case 6:
+        return 'Sat';
+      case 7:
+        return 'Sun';
+      default:
+        return '';
+    }
+  }
+
+  List<Routine> _getRoutinesForSelectedDay() {
+    final dayAbbr = _getDayAbbreviation(_selectedDay);
+    return _routines.where((routine) => routine.selectedDays.contains(dayAbbr)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -345,7 +371,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildScheduledRoutines() {
-    if (_routines.isEmpty) {
+    final filteredRoutines = _getRoutinesForSelectedDay();
+    
+    if (filteredRoutines.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -367,7 +395,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _routines.length + 1,
+      itemCount: filteredRoutines.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -381,7 +409,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           );
         }
 
-        final routine = _routines[index - 1];
+        final routine = filteredRoutines[index - 1];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
@@ -403,29 +431,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 fontSize: 16,
               ),
             ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(routine.frequency),
-                if (routine.startTime != null && routine.endTime != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.access_time, size: 14, color: Color(0xFF8E8E93)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${routine.startTime} - ${routine.endTime}',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF8E8E93),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
+            subtitle: Text(
+              routine.description,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF8E8E93),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

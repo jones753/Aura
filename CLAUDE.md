@@ -74,12 +74,11 @@ frontend/lib/
 - **Service-based architecture:** Services handle API calls, screens handle UI
 - **JWT authentication:** 24-hour token expiration, stored in flutter_secure_storage
 - **FutureBuilder pattern:** Async data loading in Flutter screens
-- **Mentor personalization:** 4 styles (strict/gentle/balanced/hilarious) + intensity (1-10)
 
 ## Database Schema
 
-- **users:** Authentication + mentor preferences (style, intensity) + profile info
-- **routines:** Templates with scheduling (frequency, target_duration, scheduled_time)
+- **users:** Authentication + profile info
+- **routines:** Templates with scheduling (frequency, selected_days, target_duration, priority, is_active)
 - **daily_logs:** Daily entries with mood/energy/stress (1-10 scale)
 - **routine_entries:** Performance tracking per routine per day
 - **feedback:** AI-generated feedback with compliance metrics

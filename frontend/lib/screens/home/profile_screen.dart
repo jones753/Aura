@@ -415,8 +415,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         lastName: _lastNameController.text,
         bio: _bioController.text,
         goals: _goalsController.text,
-        mentorStyle: _mentorStyle,
-        mentorIntensity: _mentorIntensity,
       );
 
       if (mounted) {

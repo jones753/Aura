@@ -38,9 +38,8 @@ class Routine(db.Model):
     
     # Expected frequency and target
     frequency = db.Column(db.String(50))  # 'daily', 'weekly', '3x per week', etc.
+    selected_days = db.Column(db.String(100))  # Comma-separated days: 'Mon,Wed,Fri' or 'all' for daily
     target_duration = db.Column(db.Integer)  # minutes
-    start_time = db.Column(db.Time)  # start of time window (HH:MM:SS)
-    end_time = db.Column(db.Time)  # end of time window (HH:MM:SS)
 
     # Priority
     priority = db.Column(db.Integer, default=5)  # 1-10 scale

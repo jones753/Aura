@@ -34,11 +34,10 @@ def get_routines(current_user):
             'description': r.description,
             'category': r.category,
             'frequency': r.frequency,
+            'selected_days': r.selected_days,
             'target_duration': r.target_duration,
             'priority': r.priority,
             'is_active': r.is_active,
-            'start_time': r.start_time.strftime('%H:%M') if r.start_time else None,
-            'end_time': r.end_time.strftime('%H:%M') if r.end_time else None,
             'created_at': r.created_at.isoformat()
         } for r in routines]
     }), 200
@@ -52,35 +51,14 @@ def create_routine(current_user):
     if not data or not data.get('name'):
         return jsonify({'message': 'Routine name is required'}), 400
 
-    # Optional HH:MM start_time and end_time
-    start_time_str = (data.get('start_time') or '').strip()
-    end_time_str = (data.get('end_time') or '').strip()
-    start_time = None
-    end_time = None
-
-    if start_time_str:
-        try:
-            hh, mm = start_time_str.split(':')[:2]
-            start_time = dt_time(int(hh), int(mm))
-        except Exception:
-            start_time = None
-
-    if end_time_str:
-        try:
-            hh, mm = end_time_str.split(':')[:2]
-            end_time = dt_time(int(hh), int(mm))
-        except Exception:
-            end_time = None
-
     routine = Routine(
         user_id=current_user.id,
         name=data['name'],
         description=data.get('description', ''),
         category=data.get('category', 'general'),
         frequency=data.get('frequency', 'daily'),
+        selected_days=data.get('selected_days', 'all'),
         target_duration=data.get('target_duration', 30),
-        start_time=start_time,
-        end_time=end_time,
         priority=data.get('priority', 5),
         is_active=data.get('is_active', True)
     )
@@ -96,6 +74,7 @@ def create_routine(current_user):
             'description': routine.description,
             'category': routine.category,
             'frequency': routine.frequency,
+            'selected_days': routine.selected_days,
             'target_duration': routine.target_duration,
             'priority': routine.priority,
             'is_active': routine.is_active,
@@ -120,11 +99,10 @@ def get_routine(current_user, routine_id):
         'description': routine.description,
         'category': routine.category,
         'frequency': routine.frequency,
+        'selected_days': routine.selected_days,
         'target_duration': routine.target_duration,
         'priority': routine.priority,
         'is_active': routine.is_active,
-        'start_time': routine.start_time.strftime('%H:%M') if routine.start_time else None,
-        'end_time': routine.end_time.strftime('%H:%M') if routine.end_time else None,
         'created_at': routine.created_at.isoformat()
     }), 200
 
@@ -147,28 +125,10 @@ def update_routine(current_user, routine_id):
         routine.category = data['category']
     if 'frequency' in data:
         routine.frequency = data['frequency']
+    if 'selected_days' in data:
+        routine.selected_days = data['selected_days']
     if 'target_duration' in data:
         routine.target_duration = data['target_duration']
-    if 'start_time' in data:
-        st_val = (data.get('start_time') or '').strip()
-        if st_val:
-            try:
-                hh, mm = st_val.split(':')[:2]
-                routine.start_time = dt_time(int(hh), int(mm))
-            except Exception:
-                pass
-        else:
-            routine.start_time = None
-    if 'end_time' in data:
-        et_val = (data.get('end_time') or '').strip()
-        if et_val:
-            try:
-                hh, mm = et_val.split(':')[:2]
-                routine.end_time = dt_time(int(hh), int(mm))
-            except Exception:
-                pass
-        else:
-            routine.end_time = None
     if 'priority' in data:
         routine.priority = data['priority']
     if 'is_active' in data:
@@ -184,11 +144,10 @@ def update_routine(current_user, routine_id):
             'description': routine.description,
             'category': routine.category,
             'frequency': routine.frequency,
+            'selected_days': routine.selected_days,
             'target_duration': routine.target_duration,
             'priority': routine.priority,
             'is_active': routine.is_active,
-            'start_time': routine.start_time.strftime('%H:%M') if routine.start_time else None,
-            'end_time': routine.end_time.strftime('%H:%M') if routine.end_time else None,
             'created_at': routine.created_at.isoformat()
         }
     }), 200
@@ -442,10 +401,6 @@ def generate_ai_routines(current_user):
             existing.frequency = s['frequency']
             existing.target_duration = s['target_duration']
             existing.priority = s['priority']
-            if s.get('start_time') is not None:
-                existing.start_time = s['start_time']
-            if s.get('end_time') is not None:
-                existing.end_time = s['end_time']
             existing.is_active = True
             created.append(existing)
         else:
@@ -456,8 +411,6 @@ def generate_ai_routines(current_user):
                 category=s['category'],
                 frequency=s['frequency'],
                 target_duration=s['target_duration'],
-                start_time=s.get('start_time'),
-                end_time=s.get('end_time'),
                 priority=s['priority'],
                 is_active=True,
             )
@@ -534,8 +487,6 @@ def generate_ai_routines(current_user):
             'frequency': r.frequency,
             'target_duration': r.target_duration,
             'priority': r.priority,
-            'start_time': r.start_time.strftime('%H:%M') if r.start_time else None,
-            'end_time': r.end_time.strftime('%H:%M') if r.end_time else None,
             'is_active': r.is_active,
             'created_at': r.created_at.isoformat(),
         } for r in created]
