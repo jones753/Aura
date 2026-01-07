@@ -40,10 +40,13 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(16),
+          ),
           border: Border(
             top: BorderSide(
               color: Theme.of(context).brightness == Brightness.light
-                  ? const Color(0xFFF2F2F7)
+                  ? const Color(0xFFE5E5EA)
                   : const Color(0xFF3A3A3C),
               width: 1,
             ),
@@ -54,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: NavigationBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
               setState(() {
@@ -241,6 +245,7 @@ class _DashboardTabState extends State<DashboardTab> with SingleTickerProviderSt
                       ),
                       icon: Icons.checklist,
                       color: const Color(0xFF007AFF),
+                      gradientColors: const [Colors.white, Color(0xFF80BDFF)],
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -257,7 +262,8 @@ class _DashboardTabState extends State<DashboardTab> with SingleTickerProviderSt
                         },
                       ),
                       icon: Icons.book,
-                      color: const Color(0xFF34C759),
+                      color: const Color(0xFF007AFF),
+                      gradientColors: const [Color(0xFF80BDFF), Colors.white],
                     ),
                   ),
                 ],
@@ -509,12 +515,14 @@ class _StatCard extends StatelessWidget {
   final Widget value;
   final IconData icon;
   final Color color;
+  final List<Color>? gradientColors;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    this.gradientColors,
   });
 
   @override
@@ -525,9 +533,9 @@ class _StatCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.25),
-            color.withOpacity(0.10),
+          colors: gradientColors ?? [
+            color,
+            Colors.white,
           ],
         ),
         borderRadius: BorderRadius.circular(16),
