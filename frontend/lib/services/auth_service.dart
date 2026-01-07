@@ -97,18 +97,14 @@ class AuthService {
     String? lastName,
     String? bio,
     String? goals,
-    String? mentorStyle,
-    int? mentorIntensity,
   }) async {
     final token = await getToken();
     final body = <String, dynamic>{};
-    
+
     if (firstName != null) body['first_name'] = firstName;
     if (lastName != null) body['last_name'] = lastName;
     if (bio != null) body['bio'] = bio;
     if (goals != null) body['goals'] = goals;
-    if (mentorStyle != null) body['mentor_style'] = mentorStyle;
-    if (mentorIntensity != null) body['mentor_intensity'] = mentorIntensity;
 
     try {
       final response = await http.put(

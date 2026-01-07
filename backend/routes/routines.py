@@ -14,7 +14,7 @@ except Exception:
 
 from prompts import (
     build_routine_generation_user_prompt,
-    ROUTINE_SYSTEM_PROMPT,
+    DEFAULT_ROUTINE_SYSTEM_PROMPT,
     build_routine_summary_user_prompt,
     ROUTINE_SUMMARY_SYSTEM_PROMPT,
 )
@@ -36,9 +36,9 @@ def get_routines(current_user):
             'frequency': r.frequency,
             'target_duration': r.target_duration,
             'priority': r.priority,
-            'difficulty': r.difficulty,
             'is_active': r.is_active,
-            'scheduled_time': r.scheduled_time.strftime('%H:%M') if getattr(r, 'scheduled_time', None) else None,
+            'start_time': r.start_time.strftime('%H:%M') if r.start_time else None,
+            'end_time': r.end_time.strftime('%H:%M') if r.end_time else None,
             'created_at': r.created_at.isoformat()
         } for r in routines]
     }), 200
@@ -51,16 +51,26 @@ def create_routine(current_user):
     
     if not data or not data.get('name'):
         return jsonify({'message': 'Routine name is required'}), 400
-    
-    # Optional HH:MM scheduled_time
-    st_val = (data.get('scheduled_time') or '').strip()
-    st_time = None
-    if st_val:
+
+    # Optional HH:MM start_time and end_time
+    start_time_str = (data.get('start_time') or '').strip()
+    end_time_str = (data.get('end_time') or '').strip()
+    start_time = None
+    end_time = None
+
+    if start_time_str:
         try:
-            hh, mm = st_val.split(':')[:2]
-            st_time = dt_time(int(hh), int(mm))
+            hh, mm = start_time_str.split(':')[:2]
+            start_time = dt_time(int(hh), int(mm))
         except Exception:
-            st_time = None
+            start_time = None
+
+    if end_time_str:
+        try:
+            hh, mm = end_time_str.split(':')[:2]
+            end_time = dt_time(int(hh), int(mm))
+        except Exception:
+            end_time = None
 
     routine = Routine(
         user_id=current_user.id,
@@ -69,9 +79,9 @@ def create_routine(current_user):
         category=data.get('category', 'general'),
         frequency=data.get('frequency', 'daily'),
         target_duration=data.get('target_duration', 30),
-        scheduled_time=st_time,
+        start_time=start_time,
+        end_time=end_time,
         priority=data.get('priority', 5),
-        difficulty=data.get('difficulty', 5),
         is_active=data.get('is_active', True)
     )
     
@@ -88,9 +98,9 @@ def create_routine(current_user):
             'frequency': routine.frequency,
             'target_duration': routine.target_duration,
             'priority': routine.priority,
-            'difficulty': routine.difficulty,
             'is_active': routine.is_active,
-            'scheduled_time': routine.scheduled_time.strftime('%H:%M') if routine.scheduled_time else None,
+            'start_time': routine.start_time.strftime('%H:%M') if routine.start_time else None,
+            'end_time': routine.end_time.strftime('%H:%M') if routine.end_time else None,
             'created_at': routine.created_at.isoformat()
         }
     }), 201
@@ -112,9 +122,9 @@ def get_routine(current_user, routine_id):
         'frequency': routine.frequency,
         'target_duration': routine.target_duration,
         'priority': routine.priority,
-        'difficulty': routine.difficulty,
         'is_active': routine.is_active,
-        'scheduled_time': routine.scheduled_time.strftime('%H:%M') if getattr(routine, 'scheduled_time', None) else None,
+        'start_time': routine.start_time.strftime('%H:%M') if routine.start_time else None,
+        'end_time': routine.end_time.strftime('%H:%M') if routine.end_time else None,
         'created_at': routine.created_at.isoformat()
     }), 200
 
@@ -139,20 +149,28 @@ def update_routine(current_user, routine_id):
         routine.frequency = data['frequency']
     if 'target_duration' in data:
         routine.target_duration = data['target_duration']
-    if 'scheduled_time' in data:
-        st_val = (data.get('scheduled_time') or '').strip()
+    if 'start_time' in data:
+        st_val = (data.get('start_time') or '').strip()
         if st_val:
             try:
                 hh, mm = st_val.split(':')[:2]
-                routine.scheduled_time = dt_time(int(hh), int(mm))
+                routine.start_time = dt_time(int(hh), int(mm))
             except Exception:
                 pass
         else:
-            routine.scheduled_time = None
+            routine.start_time = None
+    if 'end_time' in data:
+        et_val = (data.get('end_time') or '').strip()
+        if et_val:
+            try:
+                hh, mm = et_val.split(':')[:2]
+                routine.end_time = dt_time(int(hh), int(mm))
+            except Exception:
+                pass
+        else:
+            routine.end_time = None
     if 'priority' in data:
         routine.priority = data['priority']
-    if 'difficulty' in data:
-        routine.difficulty = data['difficulty']
     if 'is_active' in data:
         routine.is_active = data['is_active']
     
@@ -168,9 +186,9 @@ def update_routine(current_user, routine_id):
             'frequency': routine.frequency,
             'target_duration': routine.target_duration,
             'priority': routine.priority,
-            'difficulty': routine.difficulty,
             'is_active': routine.is_active,
-            'scheduled_time': routine.scheduled_time.strftime('%H:%M') if getattr(routine, 'scheduled_time', None) else None,
+            'start_time': routine.start_time.strftime('%H:%M') if routine.start_time else None,
+            'end_time': routine.end_time.strftime('%H:%M') if routine.end_time else None,
             'created_at': routine.created_at.isoformat()
         }
     }), 200
@@ -217,25 +235,35 @@ def generate_ai_routines(current_user):
     base_url = os.getenv('OPENAI_BASE_URL')
 
     def _normalize_routine_obj(obj):
-        # Parse HH:MM time if present
-        st = (obj.get('scheduled_time') or '').strip() if isinstance(obj, dict) else ''
-        st_time = None
-        if st:
+        # Parse HH:MM times if present
+        start_str = (obj.get('start_time') or '').strip() if isinstance(obj, dict) else ''
+        end_str = (obj.get('end_time') or '').strip() if isinstance(obj, dict) else ''
+        start_time = None
+        end_time = None
+
+        if start_str:
             try:
-                hh, mm = st.split(':')[:2]
-                st_time = dt_time(int(hh), int(mm))
+                hh, mm = start_str.split(':')[:2]
+                start_time = dt_time(int(hh), int(mm))
             except Exception:
-                st_time = None
+                start_time = None
+
+        if end_str:
+            try:
+                hh, mm = end_str.split(':')[:2]
+                end_time = dt_time(int(hh), int(mm))
+            except Exception:
+                end_time = None
 
         return {
             'name': str(obj.get('name', '')).strip()[:120],
             'description': str(obj.get('description', '')).strip(),
             'category': (obj.get('category') or 'personal'),
-            'frequency': 'daily',
+            'frequency': obj.get('frequency', 'daily'),
             'target_duration': int(max(5, min(120, int(obj.get('target_duration') or 20)))),
             'priority': int(max(1, min(10, int(obj.get('priority') or 5)))),
-            'difficulty': int(max(1, min(10, int(obj.get('difficulty') or 5)))),
-            'scheduled_time': st_time,
+            'start_time': start_time,
+            'end_time': end_time,
         }
 
     if api_key and OpenAI is not None:
@@ -252,7 +280,7 @@ def generate_ai_routines(current_user):
             completion = client.chat.completions.create(
                 model=model,
                 messages=[
-                    {"role": "system", "content": ROUTINE_SYSTEM_PROMPT},
+                    {"role": "system", "content": DEFAULT_ROUTINE_SYSTEM_PROMPT},
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.6,
@@ -308,7 +336,8 @@ def generate_ai_routines(current_user):
                 continue
         return blocks
 
-    def _pick_time(category: str, unavail: str):
+    def _pick_time(category: str, unavail: str, duration: int = 60):
+        """Pick a time range for a routine. Returns (start_time, end_time) tuple."""
         prefs = {
             'health': [6, 7, 18],
             'work': [9, 10, 14],
@@ -322,13 +351,24 @@ def generate_ai_routines(current_user):
                 if b[0] <= h < b[1]:
                     return False
             return True
+
+        # Pick start hour
+        start_hour = options[0]
         for h in options:
             if allowed(h):
-                return dt_time(h, 0)
-        # fallback
-        return dt_time(options[0], 0)
+                start_hour = h
+                break
 
-    def add(name, description, category, duration, priority, difficulty=5, scheduled_time=None):
+        # Calculate end hour (add duration minutes to start)
+        end_hour = start_hour + (duration // 60)
+        end_minute = duration % 60
+
+        return (dt_time(start_hour, 0), dt_time(end_hour, end_minute))
+
+    def add(name, description, category, duration, priority, start_time=None, end_time=None):
+        if start_time is None or end_time is None:
+            start_time, end_time = _pick_time(category, unavailable_times, duration)
+
         suggestions.append({
             'name': name,
             'description': description,
@@ -336,8 +376,8 @@ def generate_ai_routines(current_user):
             'frequency': 'daily',
             'target_duration': duration,
             'priority': priority,
-            'difficulty': difficulty,
-            'scheduled_time': scheduled_time or _pick_time(category, unavailable_times),
+            'start_time': start_time,
+            'end_time': end_time,
         })
 
     # If LLM unavailable or returned nothing, use heuristics fallback
@@ -369,7 +409,7 @@ def generate_ai_routines(current_user):
         # Heuristics from desired routine keywords
         if desired:
             if re.search(r'strength|gym|weights', desired):
-                add('Strength Training', 'Full-body strength routine', 'health', 40, 8, difficulty=7)
+                add('Strength Training', 'Full-body strength routine', 'health', 40, 8)
             if re.search(r'yoga', desired):
                 add('Yoga', 'Stretching and flexibility', 'health', 25, 6)
             if re.search(r'language|spanish|french|german|japanese|english', desired):
@@ -389,35 +429,6 @@ def generate_ai_routines(current_user):
         unique[s['name'].lower()] = s
     suggestions = list(unique.values())
 
-    # Apply final mentor-style enforcement if needed
-    style = (current_user.mentor_style or 'balanced').lower()
-    if style == 'strict':
-        # Ensure higher difficulty and more items when possible
-        for s in suggestions:
-            s['difficulty'] = max(s.get('difficulty', 7), 9)
-        # If fewer than 6, pad with time-tested strict additions (without duplicates)
-        pad_candidates = [
-            ('Deep Work Session', 'Focused work without distractions', 'work', 60, 9, 10),
-            ('Morning Exercise', 'Start your day with movement', 'health', 30, 9, 10),
-            ('Time Blocking', 'Block a chunk for focused work', 'work', 45, 8, 9),
-        ]
-        names_lower = {s['name'].lower() for s in suggestions}
-        for name, desc, cat, dur, prio, diff in pad_candidates:
-            if len(suggestions) >= 6:
-                break
-            if name.lower() not in names_lower:
-                suggestions.append({
-                    'name': name,
-                    'description': desc,
-                    'category': cat,
-                    'frequency': 'daily',
-                    'target_duration': dur,
-                    'priority': prio,
-                    'difficulty': diff,
-                    'scheduled_time': _pick_time(cat, unavailable_times),
-                })
-                names_lower.add(name.lower())
-
     # Create routines if not already present for this user
     created = []
     for s in suggestions:
@@ -431,9 +442,10 @@ def generate_ai_routines(current_user):
             existing.frequency = s['frequency']
             existing.target_duration = s['target_duration']
             existing.priority = s['priority']
-            existing.difficulty = s['difficulty']
-            if s.get('scheduled_time') is not None:
-                existing.scheduled_time = s['scheduled_time']
+            if s.get('start_time') is not None:
+                existing.start_time = s['start_time']
+            if s.get('end_time') is not None:
+                existing.end_time = s['end_time']
             existing.is_active = True
             created.append(existing)
         else:
@@ -444,9 +456,9 @@ def generate_ai_routines(current_user):
                 category=s['category'],
                 frequency=s['frequency'],
                 target_duration=s['target_duration'],
-                scheduled_time=s.get('scheduled_time'),
+                start_time=s.get('start_time'),
+                end_time=s.get('end_time'),
                 priority=s['priority'],
-                difficulty=s['difficulty'],
                 is_active=True,
             )
             db.session.add(routine)
@@ -468,7 +480,8 @@ def generate_ai_routines(current_user):
                 'frequency': r.frequency,
                 'target_duration': r.target_duration,
                 'priority': r.priority,
-                'difficulty': r.difficulty,
+                'start_time': r.start_time.strftime('%H:%M') if r.start_time else None,
+                'end_time': r.end_time.strftime('%H:%M') if r.end_time else None,
             } for r in created]
             summary_user_prompt = build_routine_summary_user_prompt(
                 current_user,
@@ -502,11 +515,10 @@ def generate_ai_routines(current_user):
         # Build a compact paragraph
         routine_names = ', '.join([r.name for r in created][:5])
         more = '' if len(created) <= 5 else f", plus {len(created)-5} more"
-        style = (current_user.mentor_style or 'balanced').lower()
         summary_text = (
-            f"Based on your goals and challenges, I've proposed daily routines like {routine_names}{more}. "
-            f"These aim to fit your constraints (unavailable: {unavailable_times or 'none'}) and move you toward your objectives. "
-            f"The plan reflects your mentor style ('{style}') and intensity, balancing priority and difficulty so you can build momentum quickly."
+            f"Based on your goals and challenges, I've proposed routines like {routine_names}{more}. "
+            f"These aim to fit your constraints (unavailable: {unavailable_times or 'none'}) and support your objectives. "
+            f"The plan is balanced and realistic to help you build sustainable momentum."
         )
 
     return jsonify({
@@ -522,8 +534,8 @@ def generate_ai_routines(current_user):
             'frequency': r.frequency,
             'target_duration': r.target_duration,
             'priority': r.priority,
-            'difficulty': r.difficulty,
-            'scheduled_time': r.scheduled_time.strftime('%H:%M') if getattr(r, 'scheduled_time', None) else None,
+            'start_time': r.start_time.strftime('%H:%M') if r.start_time else None,
+            'end_time': r.end_time.strftime('%H:%M') if r.end_time else None,
             'is_active': r.is_active,
             'created_at': r.created_at.isoformat(),
         } for r in created]

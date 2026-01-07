@@ -8,9 +8,10 @@ class Routine {
   final String frequency;
   final int targetDuration;
   final int priority;
-  final int difficulty;
   final bool isActive;
   final DateTime createdAt;
+  final String? startTime; // Time range start (HH:MM format)
+  final String? endTime; // Time range end (HH:MM format)
   final int currentStreak; // New field
   final int longestStreak; // New field
   final DateTime? lastCompletedDate; // New field
@@ -23,9 +24,10 @@ class Routine {
     required this.frequency,
     required this.targetDuration,
     required this.priority,
-    required this.difficulty,
     required this.isActive,
     required this.createdAt,
+    this.startTime,
+    this.endTime,
     this.currentStreak = 0,
     this.longestStreak = 0,
     this.lastCompletedDate,
@@ -40,15 +42,16 @@ class Routine {
       frequency: json['frequency'] ?? 'daily',
       targetDuration: json['target_duration'] ?? 30,
       priority: json['priority'] ?? 5,
-      difficulty: json['difficulty'] ?? 5,
       isActive: json['is_active'] ?? true,
       createdAt: DateTime.parse(
         (json['created_at'] ?? DateTime.now().toIso8601String()),
       ),
+      startTime: json['start_time'],
+      endTime: json['end_time'],
       currentStreak: json['current_streak'] ?? 0,
       longestStreak: json['longest_streak'] ?? 0,
-      lastCompletedDate: json['last_completed_date'] != null 
-          ? DateTime.parse(json['last_completed_date']) 
+      lastCompletedDate: json['last_completed_date'] != null
+          ? DateTime.parse(json['last_completed_date'])
           : null,
     );
   }
@@ -74,7 +77,8 @@ class RoutineService {
     String frequency = 'daily',
     int targetDuration = 30,
     int priority = 5,
-    int difficulty = 5,
+    String? startTime,
+    String? endTime,
   }) async {
     try {
       final response = await ApiService.post('/routines', {
@@ -84,7 +88,8 @@ class RoutineService {
         'frequency': frequency,
         'target_duration': targetDuration,
         'priority': priority,
-        'difficulty': difficulty,
+        if (startTime != null) 'start_time': startTime,
+        if (endTime != null) 'end_time': endTime,
       });
       return Routine.fromJson(response['routine']);
     } catch (e) {
@@ -101,7 +106,8 @@ class RoutineService {
     String? frequency,
     int? targetDuration,
     int? priority,
-    int? difficulty,
+    String? startTime,
+    String? endTime,
     bool? isActive,
   }) async {
     try {
@@ -112,7 +118,8 @@ class RoutineService {
       if (frequency != null) body['frequency'] = frequency;
       if (targetDuration != null) body['target_duration'] = targetDuration;
       if (priority != null) body['priority'] = priority;
-      if (difficulty != null) body['difficulty'] = difficulty;
+      if (startTime != null) body['start_time'] = startTime;
+      if (endTime != null) body['end_time'] = endTime;
       if (isActive != null) body['is_active'] = isActive;
 
       final response = await ApiService.put('/routines/$routineId', body);

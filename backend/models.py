@@ -11,11 +11,7 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    
-    # Mentor settings
-    mentor_style = db.Column(db.String(50), default='balanced')  # 'strict', 'gentle', 'balanced', 'hilarious'
-    mentor_intensity = db.Column(db.Integer, default=5)  # 1-10 scale
-    
+
     # User profile
     first_name = db.Column(db.String(50))
     last_name = db.Column(db.String(50))
@@ -41,13 +37,13 @@ class Routine(db.Model):
     category = db.Column(db.String(50))  # 'health', 'work', 'personal', 'social', etc.
     
     # Expected frequency and target
-    frequency = db.Column(db.String(50))  # 'daily', 'weekly', 'custom'
+    frequency = db.Column(db.String(50))  # 'daily', 'weekly', '3x per week', etc.
     target_duration = db.Column(db.Integer)  # minutes
-    scheduled_time = db.Column(db.Time)  # preferred time of day (HH:MM:SS)
-    
-    # Priority and difficulty
+    start_time = db.Column(db.Time)  # start of time window (HH:MM:SS)
+    end_time = db.Column(db.Time)  # end of time window (HH:MM:SS)
+
+    # Priority
     priority = db.Column(db.Integer, default=5)  # 1-10 scale
-    difficulty = db.Column(db.Integer, default=5)  # 1-10 scale
     
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

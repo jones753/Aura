@@ -64,7 +64,6 @@ class _ManualRoutineScreenState extends State<ManualRoutineScreen> {
           category: routine['category'] ?? 'general',
           targetDuration: routine['target_duration'] ?? 30,
           priority: routine['priority'] ?? 5,
-          difficulty: routine['difficulty'] ?? 5,
         );
       }
 
@@ -222,7 +221,6 @@ class _RoutineDialogState extends State<_RoutineDialog> {
   late String _category;
   late int _targetDuration;
   late int _priority;
-  late int _difficulty;
 
   @override
   void initState() {
@@ -233,7 +231,6 @@ class _RoutineDialogState extends State<_RoutineDialog> {
     _category = routine?['category'] ?? 'general';
     _targetDuration = routine?['target_duration'] ?? 30;
     _priority = routine?['priority'] ?? 5;
-    _difficulty = routine?['difficulty'] ?? 5;
   }
 
   @override
@@ -257,7 +254,6 @@ class _RoutineDialogState extends State<_RoutineDialog> {
       'category': _category,
       'target_duration': _targetDuration,
       'priority': _priority,
-      'difficulty': _difficulty,
     });
 
     Navigator.of(context).pop();
@@ -339,20 +335,6 @@ class _RoutineDialogState extends State<_RoutineDialog> {
                 onChanged: (value) {
                   setState(() {
                     _priority = value.toInt();
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-              Text('Difficulty: $_difficulty'),
-              Slider(
-                value: _difficulty.toDouble(),
-                min: 1,
-                max: 10,
-                divisions: 9,
-                label: '$_difficulty',
-                onChanged: (value) {
-                  setState(() {
-                    _difficulty = value.toInt();
                   });
                 },
               ),

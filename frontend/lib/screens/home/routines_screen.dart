@@ -131,12 +131,6 @@ class RoutineCard extends StatelessWidget {
     required this.onRefresh,
   });
 
-  Color _getDifficultyColor(int difficulty) {
-    if (difficulty <= 3) return Colors.green;
-    if (difficulty <= 6) return Colors.orange;
-    return Colors.red;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -313,34 +307,35 @@ class RoutineCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Difficulty',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF8E8E93),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getDifficultyColor(routine.difficulty).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${routine.difficulty}/10',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: _getDifficultyColor(routine.difficulty),
-                        fontWeight: FontWeight.w700,
+              if (routine.startTime != null && routine.endTime != null)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Time',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF8E8E93),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5856D6).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${routine.startTime}-${routine.endTime}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF5856D6),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ],
@@ -374,7 +369,8 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
   String _frequency = 'daily';
   int _targetDuration = 30;
   final int _priority = 5;
-  int _difficulty = 5;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
   bool _isLoading = false;
 
   @override
@@ -509,38 +505,48 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Time Window (Optional)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Difficulty',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(_startTime == null ? 'Start Time' : _startTime!.format(context)),
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _startTime ?? TimeOfDay.now(),
+                              );
+                              if (time != null) {
+                                setState(() => _startTime = time);
+                              }
+                            },
                           ),
                         ),
-                        Text(
-                          '$_difficulty/10',
-                          style: const TextStyle(
-                            color: Color(0xFFFF9500),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(_endTime == null ? 'End Time' : _endTime!.format(context)),
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _endTime ?? TimeOfDay.now(),
+                              );
+                              if (time != null) {
+                                setState(() => _endTime = time);
+                              }
+                            },
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Slider(
-                      value: _difficulty.toDouble(),
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      label: _difficulty.toString(),
-                      onChanged: (value) {
-                        setState(() {
-                          _difficulty = value.toInt();
-                        });
-                      },
                     ),
                   ],
                 ),
@@ -589,7 +595,12 @@ class _CreateRoutineDialogState extends State<CreateRoutineDialog> {
         frequency: _frequency,
         targetDuration: _targetDuration,
         priority: _priority,
-        difficulty: _difficulty,
+        startTime: _startTime != null
+            ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
+            : null,
+        endTime: _endTime != null
+            ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
+            : null,
       );
 
       if (mounted) {
@@ -623,7 +634,8 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late String _category;
-  late int _difficulty;
+  TimeOfDay? _startTime;
+  TimeOfDay? _endTime;
   bool _isLoading = false;
 
   @override
@@ -632,7 +644,16 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
     _nameController = TextEditingController(text: widget.routine.name);
     _descriptionController = TextEditingController(text: widget.routine.description);
     _category = widget.routine.category;
-    _difficulty = widget.routine.difficulty;
+
+    // Parse start and end times from routine
+    if (widget.routine.startTime != null) {
+      final parts = widget.routine.startTime!.split(':');
+      _startTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
+    if (widget.routine.endTime != null) {
+      final parts = widget.routine.endTime!.split(':');
+      _endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    }
   }
 
   @override
@@ -689,38 +710,48 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'Time Window',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Difficulty',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(_startTime == null ? 'Start Time' : _startTime!.format(context)),
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _startTime ?? TimeOfDay.now(),
+                              );
+                              if (time != null) {
+                                setState(() => _startTime = time);
+                              }
+                            },
                           ),
                         ),
-                        Text(
-                          '$_difficulty/10',
-                          style: const TextStyle(
-                            color: Color(0xFFFF9500),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time),
+                            label: Text(_endTime == null ? 'End Time' : _endTime!.format(context)),
+                            onPressed: () async {
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: _endTime ?? TimeOfDay.now(),
+                              );
+                              if (time != null) {
+                                setState(() => _endTime = time);
+                              }
+                            },
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Slider(
-                      value: _difficulty.toDouble(),
-                      min: 1,
-                      max: 10,
-                      divisions: 9,
-                      label: _difficulty.toString(),
-                      onChanged: (value) {
-                        setState(() {
-                          _difficulty = value.toInt();
-                        });
-                      },
                     ),
                   ],
                 ),
@@ -777,7 +808,12 @@ class _EditRoutineDialogState extends State<EditRoutineDialog> {
         routineId: widget.routine.id,
         name: _nameController.text,
         description: _descriptionController.text,
-        difficulty: _difficulty,
+        startTime: _startTime != null
+            ? '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}'
+            : null,
+        endTime: _endTime != null
+            ? '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}'
+            : null,
       );
 
       if (mounted) {

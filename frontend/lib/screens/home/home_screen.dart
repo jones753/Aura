@@ -7,6 +7,7 @@ import '../../services/feedback_service.dart';
 import '../auth/login_screen.dart';
 import 'profile_screen.dart';
 import 'routines_screen.dart';
+import 'calendar_screen.dart';
 import 'daily_log_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pages = [
       const DashboardTab(),
       const RoutinesScreen(),
+      const CalendarScreen(),
       const DailyLogScreen(),
       const ProfileScreen(),
     ];
@@ -68,6 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.checklist_outlined),
                 selectedIcon: Icon(Icons.checklist),
                 label: 'Routines',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.calendar_month_outlined),
+                selectedIcon: Icon(Icons.calendar_month),
+                label: 'Calendar',
               ),
               NavigationDestination(
                 icon: Icon(Icons.book_outlined),

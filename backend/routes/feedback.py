@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models import db, Feedback, DailyLog, RoutineEntry, Routine
 from routes.auth import token_required
 from datetime import datetime
-from prompts import get_system_prompt, build_feedback_prompt
+from prompts import DEFAULT_FEEDBACK_SYSTEM_PROMPT, build_feedback_prompt
 import os
 
 feedback_bp = Blueprint('feedback', __name__, url_prefix='/api/feedback')
@@ -35,7 +35,7 @@ def generate_ai_feedback_openai(user, daily_log, historical_data, routine_entrie
         openai.api_key = openai_key
         
         # Build the prompt
-        system_prompt = get_system_prompt(user.mentor_style)
+        system_prompt = DEFAULT_FEEDBACK_SYSTEM_PROMPT
         user_prompt = build_feedback_prompt(user, daily_log, historical_data, routine_entries)
         
         # Call OpenAI
@@ -89,21 +89,16 @@ def generate_ai_feedback_rule_based(user, daily_log, historical_data, routine_en
         'ai_generated': False
     }
     
-    # Generate feedback text based on mentor style and historical context
+    # Generate feedback text based on historical context
     mood = daily_log.mood or 5
     energy = daily_log.energy_level or 5
     stress = daily_log.stress_level or 5
-    
-    mentor_style = user.mentor_style
-    mentor_intensity = user.mentor_intensity
-    
+
     feedback_text = generate_mentor_feedback(
         compliance_rate=compliance_rate,
         mood=mood,
         energy=energy,
         stress=stress,
-        mentor_style=mentor_style,
-        mentor_intensity=mentor_intensity,
         top_performer=top_performer,
         biggest_miss=biggest_miss,
         user_name=user.first_name or user.username,
@@ -174,44 +169,20 @@ def analyze_historical_performance(user, all_logs):
         'worst_routine': min(routine_stats.items(), key=lambda x: x[1]['completion_rate'])[0] if routine_stats else None
     }
 
-def generate_mentor_feedback(compliance_rate, mood, energy, stress, mentor_style, mentor_intensity, 
+def generate_mentor_feedback(compliance_rate, mood, energy, stress,
                             top_performer, biggest_miss, user_name, historical_data=None):
-    """Generate mentor feedback based on style, intensity, and historical context"""
-    
-    intensity_multiplier = mentor_intensity / 5
+    """Generate balanced mentor feedback based on historical context"""
+
     feedback_parts = []
     historical_data = historical_data or {}
-    
+
     # Opening based on today's compliance
     if compliance_rate >= 80:
-        if mentor_style == 'strict':
-            feedback_parts.append(f"Nice work, {user_name}. You hit {compliance_rate:.0f}% compliance. Not perfect, but acceptable.")
-        elif mentor_style == 'gentle':
-            feedback_parts.append(f"Great job today, {user_name}! You achieved {compliance_rate:.0f}% compliance on your routines.")
-        elif mentor_style == 'hilarious':
-            feedback_parts.append(f"Yo {user_name}, look at you crushing it with {compliance_rate:.0f}% compliance! Are you actually a robot? 🤖")
-        else:  # balanced
-            feedback_parts.append(f"Solid performance, {user_name}. You're at {compliance_rate:.0f}% compliance today.")
-    
+        feedback_parts.append(f"Great work, {user_name}! You achieved {compliance_rate:.0f}% compliance today.")
     elif compliance_rate >= 50:
-        if mentor_style == 'strict':
-            feedback_parts.append(f"{user_name}, {compliance_rate:.0f}% is mediocre. You can do better. I know you can.")
-        elif mentor_style == 'gentle':
-            feedback_parts.append(f"You did okay today, {user_name}. You're at {compliance_rate:.0f}% compliance. Let's aim higher tomorrow!")
-        elif mentor_style == 'hilarious':
-            feedback_parts.append(f"Meh, {user_name}. {compliance_rate:.0f}% is like ordering a burger and eating half of it. Is your motivation on break? 😅")
-        else:  # balanced
-            feedback_parts.append(f"You're at {compliance_rate:.0f}% compliance. There's room for improvement.")
-    
+        feedback_parts.append(f"You're at {compliance_rate:.0f}% compliance, {user_name}. There's room to improve.")
     else:
-        if mentor_style == 'strict':
-            feedback_parts.append(f"This is disappointing, {user_name}. {compliance_rate:.0f}% is unacceptable. We need to talk about your commitment.")
-        elif mentor_style == 'gentle':
-            feedback_parts.append(f"I see you struggled today, {user_name}. Only {compliance_rate:.0f}% compliance. What happened? Let's figure this out together.")
-        elif mentor_style == 'hilarious':
-            feedback_parts.append(f"Ooof {user_name}, {compliance_rate:.0f}% compliance? Did you wake up thinking 'nah, I'll skip today'? 😬")
-        else:  # balanced
-            feedback_parts.append(f"You're at {compliance_rate:.0f}% compliance. Today was challenging—let's reset for tomorrow.")
+        feedback_parts.append(f"You're at {compliance_rate:.0f}% compliance. Let's figure out what got in the way.")
     
     # Add observations from today
     if mood <= 3:
@@ -249,12 +220,7 @@ def generate_mentor_feedback(compliance_rate, mood, energy, stress, mentor_style
     
     # Address biggest miss
     if biggest_miss and compliance_rate < 80:
-        if mentor_style == 'strict':
-            feedback_parts.append(f"'{biggest_miss}' didn't happen. Why? Let's fix this.")
-        elif mentor_style == 'hilarious':
-            feedback_parts.append(f"'{biggest_miss}' got ghosted today. Is it that bad? 👻")
-        else:
-            feedback_parts.append(f"You missed '{biggest_miss}' today. What got in the way?")
+        feedback_parts.append(f"You missed '{biggest_miss}' today. What got in the way?")
     
     return " ".join(feedback_parts)
 

@@ -57,9 +57,7 @@ def register():
         email=data.get('email', f"{data['username']}@temp.local"),
         password_hash=generate_password_hash(data['password']),
         first_name=data.get('first_name', ''),
-        last_name=data.get('last_name', ''),
-        mentor_style=data.get('mentor_style', 'balanced'),
-        mentor_intensity=data.get('mentor_intensity', 5)
+        last_name=data.get('last_name', '')
     )
     
     db.session.add(user)
@@ -111,8 +109,6 @@ def get_profile(current_user):
         'email': current_user.email,
         'first_name': current_user.first_name,
         'last_name': current_user.last_name,
-        'mentor_style': current_user.mentor_style,
-        'mentor_intensity': current_user.mentor_intensity,
         'goals': current_user.goals,
         'created_at': current_user.created_at.isoformat()
     }), 200
@@ -129,14 +125,10 @@ def update_profile(current_user):
         current_user.last_name = data['last_name']
     if 'goals' in data:
         current_user.goals = data['goals']
-    if 'mentor_style' in data:
-        current_user.mentor_style = data['mentor_style']
-    if 'mentor_intensity' in data:
-        current_user.mentor_intensity = data['mentor_intensity']
-    
+
     current_user.updated_at = datetime.utcnow()
     db.session.commit()
-    
+
     return jsonify({
         'message': 'Profile updated successfully',
         'user': {
@@ -144,7 +136,6 @@ def update_profile(current_user):
             'email': current_user.email,
             'first_name': current_user.first_name,
             'last_name': current_user.last_name,
-            'mentor_style': current_user.mentor_style,
-            'mentor_intensity': current_user.mentor_intensity
+            'goals': current_user.goals
         }
     }), 200
